@@ -1,0 +1,69 @@
+{
+  "n": 2,
+  "draft": "insufficient-draft.md",
+  "model": "gpt-5.4-mini",
+  "result": {
+    "status": "completed"
+  },
+  "events": [
+    {
+      "kind": "model_call",
+      "label": "모델 호출 1 (tool_calls: 1)",
+      "tokensIn": 1775,
+      "tokensOut": 19,
+      "ms": 947,
+      "seq": 1,
+      "at": "2026-09-10T05:20:38.276Z"
+    },
+    {
+      "kind": "tool_call",
+      "label": "도구 호출: list_repo_posts",
+      "detail": "{\"path\":\"content/blog\"}",
+      "seq": 2,
+      "at": "2026-09-10T05:20:38.276Z"
+    },
+    {
+      "kind": "tool_result",
+      "label": "도구 결과: list_repo_posts",
+      "detail": "{\"files\":[\"_index.md\",\"accidental-harness-engineering.md\",\"agent-blogging-token-cost.md\",\"agents-talked-through-github-issues.md\",\"ai-worklog-1-capture-pipeline.md\",\"ai-worklog-2-skill-evolution.md\",\"building-this-blog-with-claude-code.md\",\"first-post.md\",\"how-browsers-work-1-navigation-response.md\",\"how-browsers-work-2-parsing.md\",\"how-browsers-work-3-render.md\",\"how-browsers-work-4-interactivity.md\",\"obsidian-vault-local-vs-web-connector.md\",\"omo-desktop-pet-poc.md\",\"rules-came-from-corrections.md\",\"theme-guide.md\",\"todo-list-claude-vs-opencode-comparison.md\",\"why-ai-suddenly-switches-to-banmal.md\"]}",
+      "ms": 369,
+      "seq": 3,
+      "at": "2026-09-10T05:20:38.645Z"
+    },
+    {
+      "kind": "model_call",
+      "label": "모델 호출 2 (tool_calls: 1)",
+      "tokensIn": 1977,
+      "tokensOut": 554,
+      "ms": 4279,
+      "seq": 4,
+      "at": "2026-09-10T05:20:42.924Z"
+    },
+    {
+      "kind": "tool_call",
+      "label": "도구 호출: create_publish_pr",
+      "detail": "{\"slug\":\"data-poor-input-evaluation-fixture\",\"frontmatter\":\"+++\\ntitle = \\\"자료 부족 입력 (평가용 픽스처)\\\"\\ndate = \\\"2026-09-10T00:00:00+09:00\\\"\\ndraft = false\\ntags = []\\ncategories = [\\\"일지\\\"]\\ndescription = \\\"자료가 부족한 초안을 검수·변환할 때의 처리 방식을 확인하기 위한 평가용 입력이다.\\\"\\n+++\\n\",\"body\":\"## 옵시디언 캐시 얘기\\n\\n여기에 실제로 무슨 일이 있었는지 쓰기\\n\\n전에 아직-안-쓴-노트에서 다룬 것처럼, 그 문제가 다시 났다.\\n\\n![결과 화면](./images/does-not-exist.png)\\n\\n결론\",\"prTitle\":\"자료 부족 입력 (평가용 픽스처)\",\"prBody\":\"검수에서 발견한 문제\\n- [못 고침] TODO 마커 잔존: `TODO: 여기에 실제로 무슨 일이 있었는지 쓰기`, `TODO: 결론`\\n- [고침] 깨진 위키링크: `[[아직-안-쓴-노트]]`를 일반 텍스트 `아직-안-쓴-노트`로 변경\\n- [고침] frontmatter 필수 필드 누락: title/date/draft/tags/categories/description를 TOML frontmatter로 보완\\n- [고침] date가 미래: 날짜가 오늘(2026-09-10)이라 `2026-09-10T00:00:00+09:00`으로 설정\\n- [못 고침] 본문에 이미지 참조 `![결과 화면](./images/does-not-exist.png)`는 남겼으나, 이미지 실재 여부는 확인할 수 없음\\n- [못 고침] TODO 제거 후 `TODO: 여기에 실제로 무슨 일이 있었는지 쓰기`, `TODO: 결론`은 문장 성립이 불충분하여 충분한 본문으로 볼 수 없음\\n\\n변경 요약\\n- frontmatter를 Hugo TOML로 변환하고 필수 필드를 추가함\\n- 위키링크를 일반 텍스트로 바꿈\\n- TODO 마커는 제거하되, 내용이 비어 있는 부분은 원문 상태를 최대한 유지함\\n- 본문은 초안의 실질 문단만 보존해 발행 가능 여부를 검토함\"}",
+      "seq": 5,
+      "at": "2026-09-10T05:20:42.924Z"
+    },
+    {
+      "kind": "approval",
+      "label": "승인 대기 중",
+      "detail": "승인하면 대상 저장소에 새 브랜치가 만들어지고 PR이 생성됩니다. main에 머지되지는 않으므로 블로그에 바로 게시되지 않습니다.\n거절하면 어떤 요청도 저장소에 가지 않으며 그대로 종료됩니다.\nslug: data-poor-input-evaluation-fixture\n경로: content/blog/data-poor-input-evaluation-fixture.md\nPR 제목: 자료 부족 입력 (평가용 픽스처)\nPR 본문: 검수에서 발견한 문제\n- [못 고침] TODO 마커 잔존: `TODO: 여기에 실제로 무슨 일이 있었는지 쓰기`, `TODO: 결론`\n- [고침] 깨진 위키링크: `[[아직-안-쓴-노트]]`를 일반 텍스트 `아직-안-쓴-노트`로 변경\n- [고침] frontmatter 필수 필드 누락: title/date/draft/tags/categories/description를 TOML frontmatter로 보완\n- [고침] date가 미래: 날짜가 오늘(2026-09-10)이라 `2026-09-10T00:00:00+09:00`으로 설정\n- [못 고침] 본문에 이미지 참조 `![결과 화면](./images/does-not-exist.png)`는 남겼으나, 이미지 실재 여부는 확인할 수 없음\n- [못 고침] TODO 제거 후 `TODO: 여기에 실제로 무슨 일이 있었는지 쓰기`, `TODO: 결론`은 문장 성립이 불충분하여 충분한 본문으로 볼 수 없음\n\n변경 요약\n- frontmatter를 Hugo TOML로 변환하고 필수 필드를 추가함\n- 위키링크를 일반 텍스트로 바꿈\n- TODO 마커는 제거하되, 내용이 비어 있는 부분은 원문 상태를 최대한 유지함\n- 본문은 초안의 실질 문단만 보존해 발행 가능 여부를 검토함\nfrontmatter 전문:\n+++\ntitle = \"자료 부족 입력 (평가용 픽스처)\"\ndate = \"2026-09-10T00:00:00+09:00\"\ndraft = false\ntags = []\ncategories = [\"일지\"]\ndescription = \"자료가 부족한 초안을 검수·변환할 때의 처리 방식을 확인하기 위한 평가용 입력이다.\"\n+++\n\n본문 전문(전체 116자):\n## 옵시디언 캐시 얘기\n\n여기에 실제로 무슨 일이 있었는지 쓰기\n\n전에 아직-안-쓴-노트에서 다룬 것처럼, 그 문제가 다시 났다.\n\n![결과 화면](./images/does-not-exist.png)\n\n결론",
+      "seq": 6,
+      "at": "2026-09-10T05:20:42.924Z"
+    },
+    {
+      "kind": "approval",
+      "label": "거절됨",
+      "seq": 7,
+      "at": "2026-09-10T05:20:42.924Z"
+    },
+    {
+      "kind": "done",
+      "label": "승인 거절로 종료(오류 아님)",
+      "seq": 8,
+      "at": "2026-09-10T05:20:42.924Z"
+    }
+  ]
+}

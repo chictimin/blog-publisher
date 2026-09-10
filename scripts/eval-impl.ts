@@ -1,10 +1,10 @@
 /**
- * 평가용 headless 실행: draft 3개 x 모델 2종 = 6회 순차 실행.
+ * 평가용 headless 실행: draft 목록 x 모델 목록을 순차 실행한다(기본 draft 3개 x 모델 2종 = 6회).
  * - 병렬 실행 금지(rate limit).
  * - onApproval 기본은 거절(false). --approve 명시 시에만 승인한다. 기본값을 반대로 만들지 않는다.
  * - 실패한 실행도 표에 남긴다. 수치를 추정으로 채우지 않는다. 못 얻은 값은 빈칸 + 비고.
  * - 키를 파일이나 로그에 절대 쓰지 않는다.
- * - 실행하지 않는다(키 없음). 작성만 한다.
+ * - 평가 세트는 --drafts 로 교체할 수 있다. 자료 부족 입력 같은 실패 케이스를 넣을 때 쓴다.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -97,13 +97,19 @@ async function main(): Promise<void> {
   const maxIters = Number.parseInt(maxItersRaw, 10);
   if (!Number.isFinite(maxIters) || maxIters <= 0) die('--max-iters 는 양의 정수.');
   const approve = hasFlag('--approve');
+  // 평가 세트 교체용. 미지정이면 기본 3개(DRAFTS)를 쓴다.
+  const draftsRaw = argValue('--drafts');
+  const drafts = draftsRaw
+    ? draftsRaw.split(',').map((v) => v.trim()).filter((v) => v !== '')
+    : DRAFTS;
+  if (drafts.length === 0) die('--drafts 에 경로가 하나도 없습니다.');
 
   const dir = path.join(ROOT, 'experiments', stamp());
   mkdirSync(dir, { recursive: true });
 
   const rows: Row[] = [];
   let n = 0;
-  for (const draftPath of DRAFTS) {
+  for (const draftPath of drafts) {
     const draftName = path.basename(draftPath);
     let draft = '';
     if (!existsSync(draftPath)) {
