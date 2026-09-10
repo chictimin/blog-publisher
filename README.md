@@ -47,6 +47,15 @@ npm run dev
 npm run build
 ```
 
+## .env 사용법
+
+`.env.example`을 복사해 `.env`로 만들고 값을 채운다. `.env`는 커밋되지 않는다(`.env.example`만 커밋된다).
+
+- 평가 스크립트용: `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `GITHUB_TOKEN`, `EVAL_OWNER`, `EVAL_REPO`, `EVAL_MODELS`. Node 프로세스만 읽으므로 웹 번들에 들어가지 않는다. 실행은 `npm run eval`이며 `--env-file-if-exists`로 `.env`를 자동 로드한다. 모델 id를 모르면 `npm run eval -- --list-models`로 먼저 조회한다.
+- 개발 편의용: `VITE_DEV_API_KEY`, `VITE_DEV_BASE_URL`, `VITE_DEV_GITHUB_TOKEN`, `VITE_DEV_REPO`. 개발 서버에서 폼을 자동 채우는 용도이며 `import.meta.env.DEV` 가드로 프로덕션 빌드에서는 항상 빈 값이다.
+- 경고: `VITE_` 접두사 변수는 Vite가 빌드 산출물에 인라인한다. 값을 채운 뒤 로컬에서 빌드한 dist를 직접 배포하면 키가 노출되므로 로컬 산출물은 배포하지 않는다. 정상 배포는 GitHub Actions가 하며 러너에 `.env`가 없어 노출되지 않는다.
+- 실측: 프로덕션 dist에서 `VITE_DEV_` 문자열 grep 결과 0건(2026-09-10 확인).
+
 ## 배포
 
 GitHub Actions로 빌드해 GitHub Pages에 배포한다. 워크플로는 `.github/workflows/` 디렉토리 참조.

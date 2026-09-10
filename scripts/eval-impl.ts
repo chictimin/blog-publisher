@@ -65,9 +65,17 @@ async function main(): Promise<void> {
   const githubToken = process.env['GITHUB_TOKEN'] ?? '';
   const missing: string[] = [];
   if (!apiKey) missing.push('OPENAI_API_KEY');
-  if (!baseUrl) missing.push('OPENAI_BASE_URL');
+  // baseUrl은 기본값으로 채우지 않는다. 무엇을 넣어야 하는지만 안내한다.
+  if (!baseUrl) missing.push('OPENAI_BASE_URL(OpenAI 호환 엔드포인트, 예: https://api.openai.com/v1)');
   if (!githubToken) missing.push('GITHUB_TOKEN');
-  if (missing.length > 0) die(`환경변수 없음: ${missing.join(', ')}`);
+  if (missing.length > 0) {
+    die(
+      `값 없음: ${missing.join(', ')}. 환경변수로 주거나 .env 파일에 넣으세요. 모델 id는 키·baseUrl 설정 후 --list-models 로 먼저 조회할 수 있습니다.`,
+    );
+  }
+  // 이후부터 apiKey·githubToken은 빈 문자열이 아니다.
+  const redact = (s: string): string =>
+    s.split(apiKey).join('[redacted]').split(githubToken).join('[redacted]');
 
   if (hasFlag('--list-models')) {
     const models = await listModels(apiKey, baseUrl);
@@ -75,14 +83,16 @@ async function main(): Promise<void> {
     return;
   }
 
-  const modelsRaw = argValue('--models') ?? '';
+  // 모델 목록: --models 인자가 EVAL_MODELS보다 우선. 쉼표 구분.
+  const modelsRaw = argValue('--models') ?? process.env['EVAL_MODELS'] ?? '';
   const models = modelsRaw.split(',').map((s) => s.trim()).filter((s) => s !== '');
   if (models.length === 0) {
-    die('--models <id1,id2> 필요. 목록은 --list-models 로 조회.');
+    die('--models <id1,id2> 또는 EVAL_MODELS 필요(.env 가능). 모델 id 목록은 --list-models 로 조회하세요.');
   }
+  // 대상 저장소: --owner/--repo 인자가 EVAL_OWNER/EVAL_REPO보다 우선.
   const owner = argValue('--owner') ?? process.env['EVAL_OWNER'] ?? '';
   const repo = argValue('--repo') ?? process.env['EVAL_REPO'] ?? '';
-  if (!owner || !repo) die('대상 저장소 없음: --owner/--repo 또는 EVAL_OWNER/EVAL_REPO 필요.');
+  if (!owner || !repo) die('대상 저장소 없음: --owner/--repo 또는 EVAL_OWNER/EVAL_REPO 필요(.env 가능).');
   const maxItersRaw = argValue('--max-iters') ?? '8';
   const maxIters = Number.parseInt(maxItersRaw, 10);
   if (!Number.isFinite(maxIters) || maxIters <= 0) die('--max-iters 는 양의 정수.');
@@ -143,7 +153,7 @@ async function main(): Promise<void> {
       }
       writeFileSync(
         path.join(dir, `trace-${n}.json`),
-        JSON.stringify({ n, draft: draftName, model, result, events }, null, 2),
+        redact(JSON.stringify({ n, draft: draftName, model, result, events }, null, 2)),
       );
       rows.push({
         n,
@@ -174,7 +184,7 @@ async function main(): Promise<void> {
   ];
   for (const r of rows) {
     lines.push(
-      `| ${r.n} | ${esc(r.draft)} | ${esc(r.model)} | ${esc(r.status)} | ${esc(r.errorCode)} | ${r.ms} | ${r.tokensIn} | ${r.tokensOut} | ${r.toolCalls} | ${esc(r.approval)} | ${esc(r.note)} |`,
+      `| ${r.n} | ${esc(redact(r.draft))} | ${esc(redact(r.model))} | ${esc(r.status)} | ${esc(r.errorCode)} | ${r.ms} | ${r.tokensIn} | ${r.tokensOut} | ${r.toolCalls} | ${esc(r.approval)} | ${esc(redact(r.note))} |`,
     );
   }
   lines.push('');

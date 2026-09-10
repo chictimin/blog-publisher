@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import HelpModal from './ui/HelpModal';
 import { listModels, runAgent } from './core/index';
 import type {
   ApprovalRequest,
@@ -29,11 +30,14 @@ interface PendingApproval {
 const MAX_ITERS = 8;
 
 function PublisherPage() {
+  // 로컬 개발 편의용 초기값. import.meta.env.DEV일 때만 VITE_DEV_*를
+  // 읽는다. 프로덕션 빌드에서는 항상 빈 문자열이다. 화면·콘솔에 노출 금지.
+  const devEnv = import.meta.env.DEV ? import.meta.env : undefined;
   // 키·토큰은 React state 메모리에만 보관한다. storage에 쓰지 않는다.
-  const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
-  const [githubToken, setGithubToken] = useState('');
-  const [repoInput, setRepoInput] = useState('');
+  const [apiKey, setApiKey] = useState(devEnv?.VITE_DEV_API_KEY ?? '');
+  const [baseUrl, setBaseUrl] = useState(devEnv?.VITE_DEV_BASE_URL ?? '');
+  const [githubToken, setGithubToken] = useState(devEnv?.VITE_DEV_GITHUB_TOKEN ?? '');
+  const [repoInput, setRepoInput] = useState(devEnv?.VITE_DEV_REPO ?? '');
 
   const [models, setModels] = useState<ModelOption[]>([]);
   const [model, setModel] = useState(''); // 기본값 없음
@@ -45,6 +49,10 @@ function PublisherPage() {
   const [traces, setTraces] = useState<TraceEvent[]>([]);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
+
+  // 사용법 모달은 버튼으로만 연다. 자동 오픈 없음(저장소 사용 금지).
+  const [helpOpen, setHelpOpen] = useState(false);
+  const helpButtonRef = useRef<HTMLButtonElement>(null);
 
   const approvalResolve = useRef<((approved: boolean) => void) | null>(null);
 
@@ -137,7 +145,22 @@ function PublisherPage() {
 
   return (
     <main>
-      <h1>Blog Publisher</h1>
+      <header className="app-header">
+        <h1>Blog Publisher</h1>
+        <button
+          type="button"
+          ref={helpButtonRef}
+          onClick={() => setHelpOpen(true)}
+        >
+          사용법
+        </button>
+      </header>
+      {helpOpen && (
+        <HelpModal
+          openerRef={helpButtonRef}
+          onClose={() => setHelpOpen(false)}
+        />
+      )}
       <p className="muted">
         상태: {status}
       </p>

@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
-    "eval": "node scripts/eval.mjs"
+    "eval": "node --env-file-if-exists=.env scripts/eval.mjs"
   },
   "dependencies": {
     "openai": "^7.13.0",
