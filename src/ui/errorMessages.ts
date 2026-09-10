@@ -1,9 +1,9 @@
 /** CONTRACT 오류 코드 → 화면 안내 문구 매핑. */
 export const ERROR_GUIDANCE: Record<string, string> = {
-  MISSING_KEY: '키 또는 토큰이 입력되지 않았습니다. 1단계에서 Anthropic 키와 GitHub PAT를 입력해 주세요.',
-  MODEL_LIST_FAILED: '모델 목록을 불러오지 못했습니다. Anthropic 키가 올바른지 확인해 주세요.',
-  CORS_BLOCKED: '브라우저에서의 API 호출이 차단되었습니다. 조직 설정 문제일 수 있으니 다른 키로 시도해 주세요.',
-  MODEL_REQUEST_FAILED: 'Anthropic API 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.',
+  MISSING_KEY: '키 또는 토큰이 입력되지 않았습니다. 1단계에서 API 키·baseUrl과 GitHub PAT를 입력해 주세요.',
+  MODEL_LIST_FAILED: '모델 목록을 불러오지 못했습니다. API 키와 baseUrl이 올바른지 확인해 주세요.',
+  CORS_BLOCKED: 'baseUrl 제공자가 브라우저에서의 직접 호출을 차단했습니다. 다른 baseUrl이나 키가 필요합니다.',
+  MODEL_REQUEST_FAILED: '모델 API 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.',
   GITHUB_AUTH_FAILED: 'GitHub 인증에 실패했습니다(401/403). PAT의 Contents·Pull requests 쓰기 권한을 확인해 주세요.',
   GITHUB_NOT_FOUND: '저장소를 찾을 수 없습니다(404). owner/repo 입력이 정확한지 확인해 주세요.',
   GITHUB_REQUEST_FAILED: 'GitHub 호출이 실패했습니다(네트워크 오류 또는 서버 오류, 1회 재시도 후 종료). 잠시 후 다시 시도해 주세요.',

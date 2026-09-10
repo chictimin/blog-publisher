@@ -1,5 +1,6 @@
 /**
  * 시스템 프롬프트. 검수와 변환 규칙은 코드가 아니라 프롬프트로 준다.
+ * 규칙 내용은 Anthropic 시절과 동일하며, 형식만 OpenAI 메시지 배열에 맞춘다.
  *
  * 변환 규칙 원본: ~/.claude/skills/devlog-publish/SKILL.md
  * - "4. Frontmatter 변환 규칙" → 아래 YAML→TOML 매핑 + 필수 추가 필드
@@ -7,9 +8,10 @@
  * 검수 항목(CONTRACT.md): TODO 마커 잔존, 깨진 위키링크, frontmatter 필수 필드
  * 누락, date 미래, slug 중복.
  */
+import type { ChatCompletionSystemMessageParam } from 'openai/resources/chat/completions';
 
-export function buildSystemPrompt(today: string): string {
-  return [
+export function buildSystemMessages(today: string): ChatCompletionSystemMessageParam[] {
+  const content = [
     '당신은 마크다운 초안을 검수하고 Hugo 블로그 포스트로 변환해 PR로 발행하는 에이전트다.',
     `오늘 날짜: ${today}. 이보다 미래인 date는 미래 날짜이므로 현재 시각으로 고친다.`,
     '',
@@ -47,5 +49,7 @@ export function buildSystemPrompt(today: string): string {
     '- body는 프론트매터를 제외한 마크다운 본문이다.',
     '- prTitle은 글 제목을 담은 한 줄, prBody는 변경 요약(검수 결과 포함)이다.',
     '- 각주는 [^n] 형식을 그대로 유지한다(Hugo goldmark에서 동작한다).',
+    '- 도구 인자는 유효한 JSON 객체로만 보낸다.',
   ].join('\n');
+  return [{ role: 'system', content }];
 }

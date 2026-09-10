@@ -8,7 +8,7 @@
 
 반복 업무: 마크다운 초안 발행. 초안이 생길 때마다 사람이 직접 하던 일 — frontmatter 형식 맞추기, slug 중복 확인, 위키링크·이미지 경로 정리, 브랜치 생성·커밋·PR 생성을 대신 처리한다.
 
-- 입력: 방문자가 붙여넣은 마크다운 초안 전문, 대상 저장소(owner/repo), 방문자가 직접 입력한 Anthropic API 키와 GitHub PAT, 방문자가 고른 모델 id.
+- 입력: 방문자가 붙여넣은 마크다운 초안 전문, 대상 저장소(owner/repo), 방문자가 직접 입력한 OpenAI 호환 API 키·baseUrl과 GitHub PAT, 방문자가 고른 모델 id.
 - 결과물: 대상 저장소의 `content/blog/<slug>.md`를 추가하는 PR 1건(PR URL 반환). `main`에 직접 push하지 않는다.
 
 ## 2. 타겟 유저
@@ -33,7 +33,7 @@ Hugo + GitHub Pages로 블로그를 운영하는 개인 블로거. devlog 발행
 
 ## 4. 도구 계획
 
-모델에 노출하는 도구는 정확히 2개다.
+모델에 노출하는 도구는 정확히 2개이며, 형식은 OpenAI function calling이다. 요청은 `tools: [{ type: 'function', function: { name, description, parameters } }]`로 보내고, 응답의 `choices[0].message.tool_calls[]`(`id`, `function.name`, `function.arguments` JSON 문자열)를 읽어 실행한 뒤 결과를 `{ role: 'tool', tool_call_id, content }` 메시지로 되돌린다. 루프 종료 판정은 `tool_calls` 유무로 한다. 토큰은 `usage.prompt_tokens`/`usage.completion_tokens`에서 읽으며, 제공자가 usage를 주지 않으면 비워 두고 0으로 채우지 않는다.
 
 ### `list_repo_posts` (읽기 전용)
 - 용도: 기존 포스트 파일명 조회로 slug 중복 검사. 에이전트는 실행 전후에 이 도구를 "언제" 쓰는지 설명(description)에 명시한다.
@@ -65,8 +65,8 @@ Hugo + GitHub Pages로 블로그를 운영하는 개인 블로거. devlog 발행
 
 한 페이지, HashRouter(`#/`만 사용. GitHub Pages는 SPA 경로를 지원하지 않으므로).
 
-1. **설정** — Anthropic 키, GitHub PAT, owner/repo 입력. "키는 이 탭 메모리에만 보관되며 새로고침하면 사라집니다" 안내 필수. PAT 필요 권한 한 줄 안내.
-2. **모델 선택** — 키 입력 후 `listModels()`(GET /v1/models, 하드코딩 금지)로 채운다. 기본 선택 없음. 미선택 시 실행 버튼 비활성.
+1. **설정** — API 키, baseUrl, GitHub PAT, owner/repo 입력. "키는 이 탭 메모리에만 보관되며 새로고침하면 사라집니다" 안내 필수. PAT 필요 권한 한 줄 안내.
+2. **모델 선택** — 키·baseUrl 입력 후 `listModels(apiKey, baseUrl)`(GET {baseUrl}/models, 하드코딩 금지)로 채운다. `display_name`이 없는 제공자 응답은 id를 그대로 쓴다. 기본 선택 없음. 미선택 시 실행 버튼 비활성.
 3. **초안 입력** — 마크다운 textarea.
 4. **실행 / trace** — `onTrace` 이벤트를 시간순 목록으로. 각 행에 kind 배지·label·소요시간, `detail`은 접기. 하단에 누적 토큰(입력/출력)과 총 소요시간.
 5. **승인 카드** — `waiting_approval`이면 `diffPreview` 표시와 승인·거절 버튼.
@@ -91,8 +91,8 @@ draft 3개 × 모델 2종 = 6회 실행으로 아래 표를 채운다. 표는 �
 
 | # | draft | 모델 | 완료 여부 | 변환 정확도 | 소요시간 | 토큰(입력/출력) | 비고(실패 단계·원인) |
 |---|---|---|---|---|---|---|---|
-| 1–3 | archive 8쌍 중 대표 3개 선정 | 모델 A(가정: 평가 시점에 방문자가 고른 2종 중 1) | — | — | — | — | — |
-| 4–6 | 동일 3개 | 모델 B | — | — | — | — | — |
+| 1–3 | archive 8쌍 중 대표 3개 선정 | 방문자 baseUrl에서 조회되는 모델 2종 중 1 (특정 모델명 지정 없음) | — | — | — | — | — |
+| 4–6 | 동일 3개 | 동일 2종 중 다른 1 | — | — | — | — | — |
 
 - 측정 기준: 완료율(6회 중 PR 생성까지 도달 비율), 변환 정확도(대응 발행 포스트와의 diff 비교), 소요시간, 토큰.
 - 평가 세트: `devlog/draft/archive/`의 발행 완료 draft와 Hugo 저장소 `content/blog/`의 대응 포스트 쌍을 입력/정답으로 재사용한다. 새로 만들지 않는다. **파일명이 일치하는 쌍은 11개가 아니라 8개다**(실측 2026-09-10). 나머지 3개(`ai-coding-session-capture`, `cuttoon-copilot-hackathon-retrospective`, `obsidian-capture-skill-cost-redesign`)는 Hugo에 같은 slug가 없어 정답 대조가 불가하므로 평가 세트에서 제외한다.
@@ -105,6 +105,6 @@ draft 3개 × 모델 2종 = 6회 실행으로 아래 표를 채운다. 표는 �
 
 ## 11. 기술 제약과 근거
 
-- **브라우저 직접 호출**: Anthropic API CORS는 공식 지원이다. SDK에서 `dangerouslyAllowBrowser: true`가 필수이며 SDK가 `anthropic-dangerous-direct-browser-access: true` 헤더를 자동 추가한다. 근거: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript , https://github.com/anthropics/anthropic-sdk-typescript/blob/main/README.md (확인 2026-09-10). 공식 경고문은 브라우저 키 노출 위험을 명시하므로, 키는 타인의 키가 아닌 방문자 본인의 키(BYOK)로 한정한다. 조직 설정에 따른 CORS 차단 보고가 있어 키별 실측 검증이 필요하다.
+- **브라우저 직접 호출**: `openai` 패키지는 브라우저 지원을 공식 제공한다. 클라이언트 생성 시 `dangerouslyAllowBrowser: true`가 필수다. 근거: https://developers.openai.com/api/reference/typescript/ (Requirements 절 원문, 확인 2026-09-10). 공식 문서에 CORS 정책이 명시돼 있지는 않으나, 프리플라이트 실측으로 아래 두 엔드포인트의 브라우저 직접 호출 가능을 확인했다(실측 2026-09-10. OPTIONS 요청에 `Origin: https://chictimin.github.io`와 `Access-Control-Request-Headers: authorization,content-type` 부여): (1) `https://api.openai.com/v1/models` → HTTP 200, `access-control-allow-origin: *`, 허용 methods에 GET·POST 등 포함, 허용 headers에 authorization·content-type 포함. (2) `https://opencode.ai/zen/go/v1/models` → HTTP 200, `access-control-allow-origin: *`, 허용 methods GET·POST·OPTIONS, 허용 headers Content-Type·Authorization 포함. CORS 허용 여부는 방문자가 입력한 baseUrl의 제공자에 달려 있고 앱이 통제할 수 없으므로, 제3의 제공자에서는 차단될 수 있다. 차단되면 `CORS_BLOCKED`로 분류하고 다른 baseUrl·키를 안내한다. 이는 결함이 아니라 구조적 한계다. 브라우저 키 노출 위험에 대한 공식 경고가 있으므로, 키·baseUrl은 타인의 것이 아닌 방문자 본인의 것으로 한정한다(BYOK).
 - **GitHub Pages**: 게시 사이트 최대 1GB, 배포 10분 타임아웃, 대역폭 월 100GB(soft). 근거: https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits (확인 2026-09-10). SPA 경로 미지원이므로 라우팅은 `#/`만 쓴다.
 - **PAT가 유일 경로인 이유**: 서버가 없으므로 GitHub OAuth의 client secret 보관·교환 주체가 없다. 브라우저에서 `api.github.com`을 `Authorization: Bearer <PAT>`로 직접 호출(CORS 허용)하고, 권한은 대상 저장소의 Contents write·PR write로 한정한다. 키 보관 방식 중 localStorage·sessionStorage는 OWASP가 인증정보 보관처로 명시적 비권고이므로 메모리만 보관하고 새로고침 시 재입력으로 한다. 근거: OWASP Session Management Cheat Sheet, https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet (확인 2026-09-10).

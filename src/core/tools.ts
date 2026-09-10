@@ -1,7 +1,8 @@
 /**
  * 모델에 노출하는 도구 정확히 2개. 더 늘리지 않는다(CONTRACT.md).
+ * 형식은 OpenAI function calling이다.
  */
-import type { Tool } from '@anthropic-ai/sdk/resources/messages';
+import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 import type { ApprovalRequest, ToolName } from './types';
 import {
   contentExists,
@@ -14,38 +15,44 @@ import {
   type GithubContext,
 } from './github';
 
-export const TOOL_DEFINITIONS: Tool[] = [
+export const TOOL_DEFINITIONS: ChatCompletionTool[] = [
   {
-    name: 'list_repo_posts',
-    description:
-      '대상 저장소의 기존 포스트 파일명을 읽어 slug 중복을 검사한다. 읽기 전용. 쓰기 전에 반드시 호출한다.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path: {
-          type: 'string',
-          description: '포스트 디렉토리. 기본 "content/blog".',
+    type: 'function',
+    function: {
+      name: 'list_repo_posts',
+      description:
+        '대상 저장소의 기존 포스트 파일명을 읽어 slug 중복을 검사한다. 읽기 전용. 쓰기 전에 반드시 호출한다.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: '포스트 디렉토리. 기본 "content/blog".',
+          },
         },
       },
     },
   },
   {
-    name: 'create_publish_pr',
-    description:
-      '브랜치를 만들고 변환된 포스트를 커밋하고 PR을 생성한다. 쓰기 작업. main에 직접 push하지 않는다. 커밋 경로: content/blog/<slug>.md. frontmatter는 +++ 구분자를 포함한 TOML 문자열이다.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        slug: { type: 'string', description: '파일명용 slug(소문자·숫자·하이픈).' },
-        frontmatter: {
-          type: 'string',
-          description: '+++ ... +++ 구분자를 포함한 TOML 프론트매터 전문.',
+    type: 'function',
+    function: {
+      name: 'create_publish_pr',
+      description:
+        '브랜치를 만들고 변환된 포스트를 커밋하고 PR을 생성한다. 쓰기 작업. main에 직접 push하지 않는다. 커밋 경로: content/blog/<slug>.md. frontmatter는 +++ 구분자를 포함한 TOML 문자열이다.',
+      parameters: {
+        type: 'object',
+        properties: {
+          slug: { type: 'string', description: '파일명용 slug(소문자·숫자·하이픈).' },
+          frontmatter: {
+            type: 'string',
+            description: '+++ ... +++ 구분자를 포함한 TOML 프론트매터 전문.',
+          },
+          body: { type: 'string', description: '변환된 마크다운 본문(프론트매터 제외).' },
+          prTitle: { type: 'string', description: 'PR 제목.' },
+          prBody: { type: 'string', description: 'PR 본문(변경 요약).' },
         },
-        body: { type: 'string', description: '변환된 마크다운 본문(프론트매터 제외).' },
-        prTitle: { type: 'string', description: 'PR 제목.' },
-        prBody: { type: 'string', description: 'PR 본문(변경 요약).' },
+        required: ['slug', 'frontmatter', 'body', 'prTitle', 'prBody'],
       },
-      required: ['slug', 'frontmatter', 'body', 'prTitle', 'prBody'],
     },
   },
 ];
@@ -60,7 +67,7 @@ export class ToolError extends Error {
   }
 }
 
-function asRecord(input: unknown): Record<string, unknown> {
+export function asRecord(input: unknown): Record<string, unknown> {
   if (input !== null && typeof input === 'object' && !Array.isArray(input)) {
     return input as Record<string, unknown>;
   }
@@ -78,11 +85,6 @@ function requiredString(input: Record<string, unknown>, key: string): string {
 export interface CreatePrResult {
   prUrl: string;
   branch: string;
-}
-
-function pickBranch(base: string, taken: boolean): string {
-  if (!taken) return base;
-  return `${base}-2`;
 }
 
 export async function executeTool(
@@ -125,7 +127,7 @@ export async function executeTool(
     throw new ToolError('GITHUB_NOT_FOUND', `기본 브랜치 refs/heads/${base}를 찾을 수 없습니다.`);
   }
   const branchTaken = (await getRefSha(ctx, `publish/${slug}`)) !== null;
-  const branch = pickBranch(`publish/${slug}`, branchTaken);
+  const branch = branchTaken ? `publish/${slug}-2` : `publish/${slug}`;
   await createBranch(ctx, branch, baseSha);
   await putFile(ctx, contentPath, `${frontmatter.trim()}\n\n${body.trim()}\n`, branch, `Add blog post: ${slug}`);
   const prUrl = await createPull(ctx, branch, base, prTitle, prBody);

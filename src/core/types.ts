@@ -4,7 +4,8 @@ export type RunStatus =
   | 'idle' | 'running' | 'waiting_approval' | 'completed' | 'error';
 
 export interface RunConfig {
-  anthropicKey: string;
+  apiKey: string;       // OpenAI 호환 API 키. 방문자 입력
+  baseUrl: string;      // OpenAI 호환 엔드포인트. 방문자 입력. 기본값을 코드에 박지 않는다
   githubToken: string;
   model: string;        // 방문자가 고른 모델 id. 기본값을 코드에 박지 않는다.
   owner: string;        // 대상 저장소 소유자

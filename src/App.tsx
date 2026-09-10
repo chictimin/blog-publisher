@@ -29,7 +29,8 @@ const MAX_ITERS = 8;
 
 function PublisherPage() {
   // 키·토큰은 React state 메모리에만 보관한다. storage에 쓰지 않는다.
-  const [anthropicKey, setAnthropicKey] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
   const [githubToken, setGithubToken] = useState('');
   const [owner, setOwner] = useState('');
   const [repo, setRepo] = useState('');
@@ -50,14 +51,14 @@ function PublisherPage() {
   const busy = status === 'running' || status === 'waiting_approval';
 
   const handleLoadModels = useCallback(async () => {
-    if (anthropicKey.trim() === '') {
+    if (apiKey.trim() === '' || baseUrl.trim() === '') {
       setModelsError(guidanceFor('MISSING_KEY'));
       return;
     }
     setModelsLoading(true);
     setModelsError(null);
     try {
-      const list = await listModels(anthropicKey);
+      const list = await listModels(apiKey, baseUrl.trim());
       setModels(list);
       setModel(''); // 목록이 바뀌면 선택 초기화 — 기본값을 박지 않는다
     } catch {
@@ -66,7 +67,7 @@ function PublisherPage() {
     } finally {
       setModelsLoading(false);
     }
-  }, [anthropicKey]);
+  }, [apiKey, baseUrl]);
 
   const handleApproval = useCallback((req: ApprovalRequest): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
@@ -83,7 +84,8 @@ function PublisherPage() {
 
   const canRun =
     !busy &&
-    anthropicKey.trim() !== '' &&
+    apiKey.trim() !== '' &&
+    baseUrl.trim() !== '' &&
     githubToken.trim() !== '' &&
     owner.trim() !== '' &&
     repo.trim() !== '' &&
@@ -98,7 +100,8 @@ function PublisherPage() {
     try {
       const runResult = await runAgent({
         config: {
-          anthropicKey,
+          apiKey,
+          baseUrl: baseUrl.trim(),
           githubToken,
           model,
           owner: owner.trim(),
@@ -124,7 +127,7 @@ function PublisherPage() {
       approvalResolve.current = null;
       setPendingApproval(null);
     }
-  }, [canRun, anthropicKey, githubToken, model, owner, repo, draft, handleApproval]);
+  }, [canRun, apiKey, baseUrl, githubToken, model, owner, repo, draft, handleApproval]);
 
   return (
     <main>
@@ -134,12 +137,14 @@ function PublisherPage() {
       </p>
 
       <SettingsForm
-        anthropicKey={anthropicKey}
+        apiKey={apiKey}
+        baseUrl={baseUrl}
         githubToken={githubToken}
         owner={owner}
         repo={repo}
         disabled={busy}
-        onAnthropicKey={setAnthropicKey}
+        onApiKey={setApiKey}
+        onBaseUrl={setBaseUrl}
         onGithubToken={setGithubToken}
         onOwner={setOwner}
         onRepo={setRepo}
@@ -150,7 +155,7 @@ function PublisherPage() {
         model={model}
         loading={modelsLoading}
         error={modelsError}
-        canLoad={anthropicKey.trim() !== ''}
+        canLoad={apiKey.trim() !== '' && baseUrl.trim() !== ''}
         disabled={busy}
         onLoad={handleLoadModels}
         onSelect={setModel}

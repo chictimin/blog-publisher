@@ -6,8 +6,10 @@
 
 마크다운 초안을 검수하고, 방문자 소유의 Hugo 블로그 GitHub 저장소에 PR로 발행하는 **완전 클라이언트사이드 웹앱**. 백엔드 서버 없음. GitHub Pages 배포. 아이펠 과제 제출물.
 
-- Anthropic API와 GitHub REST API를 **브라우저에서 직접 호출**한다. 키는 방문자가 입력한다(BYOK).
-- Anthropic 호출에는 `dangerouslyAllowBrowser: true`가 필수다(SDK가 `anthropic-dangerous-direct-browser-access: true` 헤더를 자동 추가).
+- **모델 제공자는 OpenAI 호환 API다(2026-09-10 변경).** Anthropic SDK는 쓰지 않는다. `openai` 패키지를 쓰고, **`baseUrl`도 방문자가 입력한다** — api.openai.com 본가든 OpenAI 호환 게이트웨이든 방문자가 정한다.
+- 모델 호출과 GitHub REST를 **브라우저에서 직접 호출**한다. 키·baseUrl 모두 방문자 입력이다(BYOK).
+- `openai` 클라이언트 생성 시 `dangerouslyAllowBrowser: true`가 필수다.
+- **CORS는 방문자가 넣은 baseUrl 제공자에 달렸다.** 앱이 통제할 수 없으므로, 차단되면 `CORS_BLOCKED`로 분류하고 다른 baseUrl·키가 필요하다고 안내한다. 이건 결함이 아니라 구조적 한계이며 문서에 그렇게 쓴다.
 - `api.github.com`은 CORS를 허용한다(`Authorization: Bearer <PAT>`로 직접 호출 가능).
 - 키는 **메모리에만** 보관한다. `localStorage`·`sessionStorage`에 쓰지 않는다. 새로고침하면 재입력이며, 그 사실을 화면에 한 줄로 안내한다.
 
@@ -33,7 +35,8 @@ export type RunStatus =
   | 'idle' | 'running' | 'waiting_approval' | 'completed' | 'error';
 
 export interface RunConfig {
-  anthropicKey: string;
+  apiKey: string;       // OpenAI 호환 API 키. 방문자 입력
+  baseUrl: string;      // OpenAI 호환 엔드포인트. 방문자 입력. 기본값을 코드에 박지 않는다
   githubToken: string;
   model: string;        // 방문자가 고른 모델 id. 기본값을 코드에 박지 않는다.
   owner: string;        // 대상 저장소 소유자
@@ -71,8 +74,9 @@ export interface RunResult {
 ```ts
 import type { RunConfig, RunResult, TraceEvent, ApprovalRequest } from './types';
 
-/** 키가 실제로 접근 가능한 모델 목록. GET /v1/models를 호출한다. 목록을 하드코딩하지 않는다. */
-export function listModels(anthropicKey: string): Promise<Array<{ id: string; display_name: string }>>;
+/** 키가 실제로 접근 가능한 모델 목록. GET {baseUrl}/models 를 호출한다. 목록을 하드코딩하지 않는다.
+ *  OpenAI 호환 응답은 { data: [{ id, ... }] } 형태이며 display_name이 없을 수 있다 — 없으면 id를 그대로 쓴다. */
+export function listModels(apiKey: string, baseUrl: string): Promise<Array<{ id: string; display_name: string }>>;
 
 /** 에이전트 루프 1회 실행. */
 export function runAgent(args: {
@@ -91,6 +95,8 @@ export function runAgent(args: {
 ## 도구 2개 (B 담당)
 
 모델에 노출하는 tool은 **정확히 이 2개**다. 더 늘리지 않는다.
+
+**도구 형식은 OpenAI function calling이다**: 요청은 `tools: [{ type: 'function', function: { name, description, parameters } }]`, 응답은 `choices[0].message.tool_calls[]`(각 항목에 `id`, `function.name`, `function.arguments`(JSON 문자열)), 결과는 `{ role: 'tool', tool_call_id, content }` 메시지로 되돌린다. 루프 종료 판정은 `tool_calls`의 유무로 한다(Anthropic의 `stop_reason: 'tool_use'`가 아니다). 토큰은 `usage.prompt_tokens` / `usage.completion_tokens`에서 읽는다 — 제공자가 usage를 주지 않으면 그 필드를 비워 두고 0으로 채우지 않는다.
 
 ### `list_repo_posts`
 - 용도: 대상 저장소의 기존 포스트 파일명을 읽어 slug 중복을 검사한다. 읽기 전용.
@@ -112,7 +118,7 @@ export function runAgent(args: {
 |---|---|---|
 | `MISSING_KEY` | 키 또는 토큰 미입력 | 입력 요청 |
 | `MODEL_LIST_FAILED` | `/v1/models` 실패 | 키 확인 요청 |
-| `CORS_BLOCKED` | 조직 설정 등으로 브라우저 호출 차단 | 다른 키 필요를 안내 |
+| `CORS_BLOCKED` | baseUrl 제공자가 브라우저 직접 호출을 차단 | 다른 baseUrl·키가 필요함을 안내 |
 | `MODEL_REQUEST_FAILED` | Messages API 실패 | 재시도 안내 |
 | `GITHUB_AUTH_FAILED` | 401/403 | PAT 권한(Contents·PR write) 확인 요청 |
 | `GITHUB_NOT_FOUND` | 404 | owner/repo 확인 요청 |
@@ -125,8 +131,8 @@ export function runAgent(args: {
 
 세로 한 줄 흐름. 라우팅은 `#/`만 쓴다(GitHub Pages는 SPA 경로를 지원하지 않는다).
 
-1. **설정** — Anthropic 키, GitHub PAT, owner/repo 입력. "키는 이 탭 메모리에만 보관되며 새로고침하면 사라집니다" 안내 필수. PAT에 필요한 권한(Contents: write, Pull requests: write, 저장소 1개 한정)을 한 줄로 안내.
-2. **모델 선택** — 키 입력 후 `listModels()`로 채운다. **기본 선택 없음.** 고르지 않으면 실행 버튼 비활성.
+1. **설정** — API 키, **baseUrl**(예시 문구로 `https://api.openai.com/v1` 형태를 보여주되 값을 미리 채우지 않는다), GitHub PAT, owner/repo 입력. "키는 이 탭 메모리에만 보관되며 새로고침하면 사라집니다" 안내 필수. PAT에 필요한 권한(Contents: write, Pull requests: write, 저장소 1개 한정)을 한 줄로 안내.
+2. **모델 선택** — 키와 baseUrl 입력 후 `listModels(apiKey, baseUrl)`로 채운다. **기본 선택 없음.** 고르지 않으면 실행 버튼 비활성.
 3. **초안 입력** — 마크다운 textarea.
 4. **실행 / trace** — `onTrace`로 들어오는 이벤트를 시간순 목록으로. 각 행에 kind 배지·label·소요시간, `detail`은 접기. 하단에 누적 토큰(입력/출력)과 총 소요시간.
 5. **승인 카드** — `waiting_approval`이면 `diffPreview`를 보여주고 승인/거절 버튼. 이게 되돌리기 어려운 작업 앞의 게이트다.
