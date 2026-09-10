@@ -1,0 +1,69 @@
+{
+  "n": 3,
+  "draft": "why-ai-suddenly-switches-to-banmal.md",
+  "model": "gpt-5.4-nano",
+  "result": {
+    "status": "completed"
+  },
+  "events": [
+    {
+      "kind": "model_call",
+      "label": "모델 호출 1 (tool_calls: 1)",
+      "tokensIn": 3110,
+      "tokensOut": 19,
+      "ms": 887,
+      "seq": 1,
+      "at": "2026-09-10T02:45:40.548Z"
+    },
+    {
+      "kind": "tool_call",
+      "label": "도구 호출: list_repo_posts",
+      "detail": "{\"path\":\"content/blog\"}",
+      "seq": 2,
+      "at": "2026-09-10T02:45:40.548Z"
+    },
+    {
+      "kind": "tool_result",
+      "label": "도구 결과: list_repo_posts",
+      "detail": "{\"files\":[\"_index.md\",\"accidental-harness-engineering.md\",\"agent-blogging-token-cost.md\",\"agents-talked-through-github-issues.md\",\"ai-worklog-1-capture-pipeline.md\",\"ai-worklog-2-skill-evolution.md\",\"building-this-blog-with-claude-code.md\",\"first-post.md\",\"how-browsers-work-1-navigation-response.md\",\"how-browsers-work-2-parsing.md\",\"how-browsers-work-3-render.md\",\"how-browsers-work-4-interactivity.md\",\"obsidian-vault-local-vs-web-connector.md\",\"omo-desktop-pet-poc.md\",\"rules-came-from-corrections.md\",\"theme-guide.md\",\"todo-list-claude-vs-opencode-comparison.md\",\"why-ai-suddenly-switches-to-banmal.md\"]}",
+      "ms": 318,
+      "seq": 3,
+      "at": "2026-09-10T02:45:40.866Z"
+    },
+    {
+      "kind": "model_call",
+      "label": "모델 호출 2 (tool_calls: 1)",
+      "tokensIn": 3312,
+      "tokensOut": 2363,
+      "ms": 16407,
+      "seq": 4,
+      "at": "2026-09-10T02:45:57.273Z"
+    },
+    {
+      "kind": "tool_call",
+      "label": "도구 호출: create_publish_pr",
+      "detail": "{\"slug\":\"why-ai-suddenly-switches-to-banmal\",\"frontmatter\":\"+++\\\\ntitle = \\\"왜 AI는 갑자기 반말을 할까: 규칙은 있는데 왜 안 지켜질까\\\"\\\\ndate = \\\"2026-07-20T21:00:00+09:00\\\"\\\\ndraft = false\\\\ntags = [\\\"llm\\\", \\\"ai-agent\\\", \\\"prompt-engineering\\\", \\\"banmal\\\", \\\"회고\\\"]\\\\ncategories = [\\\"일지\\\"]\\\\ndescription = \\\"AI와 대화하다 보면 잘 지키던 존댓말이 갑자기 반말로 바뀌는 순간이 있다. 명확한 규칙이 있는데도 왜 이런 일이\\\\n  벌어지는지, 직접 경험한 사례를 분석한 기록.\\\"\\\\n+++\",\"body\":\"# 왜 AI는 갑자기 반말을 할까: 규칙은 있는데 왜 안 지켜질까\\n\\n> AI 에이전트와 대화하다 보면 어느 순간 반말이 튀어나온다. 분명 시스템 프롬프트에 \\\"절대 존댓말만 사용\\\"이라고 적어놨는데. 왜 이런 일이 생기는 걸까.\\n\\n![사용자가 AI의 반말을 지적한 대화](/devlog/draft/_assets/why-banmal.jpg)\\n\\n---\\n\\n## 들어가며\\n\\n며칠 전, 나는 OpenCode(내가 주력으로 쓰는 AI 코딩 에이전트)와 작업을 하다가 문득 이상한 점을 발견했다. 분명 시스템 프롬프트에 \\\"절대 존댓말만 사용. 반말 절대 금지\\\"라고 명시적으로 적어놨는데, 대화가 길어질수록 AI가 자꾸 반말을 쓰는 것이다.\\n\\n\\\"너 반말 자주 한당...\\\"\\n\\n내가 지적하고 나서 궁금해졌다. 규칙이 이렇게 명확한데, 왜 AI는 계속 규칙을 어기는 걸까. 단순히 \\\"AI가 말을 안 들어서\\\"라고 치부하기엔 뭔가 더 구조적인 이유가 있을 것 같았다. 그래서 물어봤다. \\\"왜 자꾸 반말을 쓰는 거야?\\\" AI가 내놓은 답변은 예상보다 훨씬 흥미로웠다.\\n\\n---\\n\\n## AI가 스스로 분석한 세 가지 원인\\n\\n문제의 규칙은 `AGENTS.md` 파일의 사용자 프로필 섹션에 이렇게 정의되어 있었다.\\n\\n```\\nLanguage: Korean (한국어)\\nFormality: Formal/polite (존댓말) — NEVER use casual/informal Korean (반말)\\nHow to address the user: \\\"캡틴\\\" (항상 존댓말 사용)\\n```\\n\\nBehavior Instructions의 Tone & Style 섹션에도 같은 방침이 반복되어 있었다.\\n\\n그런데 실제 대화를 보면 AI의 응답이 이랬다:\\n\\n- \\\"좋은 접근. **그 트리거 프레이즈는**...\\\"\\n- \\\"반영 완료. **이제 이 규칙이 들어갔고**...\\\"\\n- \\\"지적 감사합니다, 캡틴. 말씀이 맞습니다. **원인을 분석해보면**...\\\"\\n\\n앞부분은 존댓말을 잘 지키다가, 뒤로 갈수록 반말이 섞이기 시작했다. 내가 왜 이런 일이 일어나는지 묻자, AI는 다음 세 가지 원인을 제시했다.\\n\\n### 1. 간결함 지침이 한국어에서 반말로 해석됨\\n\\nBehavior Instructions에는 이런 지침이 있다:\\n\\n- \\\"Be Concise\\\"\\n- \\\"Answer directly without preamble\\\"\\n- \\\"No status updates\\\"\\n- \\\"One word answers are acceptable\\\"\\n\\n영어로는 이 지침들이 자연스럽다. \\\"OK. Done. Will do.\\\" — 모두 정중한 표현이다.\\n\\n그런데 한국어에서는 \\\"간결하게\\\"의 기준이 존댓말인지 반말인지가 모호해진다. \\\"알겠습니다\\\"보다 \\\"알겠음\\\"이 더 간결하고, \\\"됐습니다\\\"보다 \\\"됨\\\"이 더 직접적이다. \\\"검토한 결과 문제가 없습니다\\\"보다 \\\"문제 없음\\\"이 더 빠르다.\\n\\n즉, `Be Concise` 지침과 `존댓말 사용` 지침이 한국어 문맥에서 충돌했고, 간결함이 이긴 것이다.\\n\\n### 2. 내부 모노로그와 출력의 경계 소실\\n\\nAI 에이전트는 사고 과정(OpenCode의 `",
+      "seq": 5,
+      "at": "2026-09-10T02:45:57.273Z"
+    },
+    {
+      "kind": "approval",
+      "label": "승인 대기 중",
+      "detail": "승인하면 대상 저장소에 새 브랜치가 만들어지고 PR이 생성됩니다. main에 머지되지는 않으므로 블로그에 바로 게시되지 않습니다.\n거절하면 어떤 요청도 저장소에 가지 않으며 그대로 종료됩니다.\nslug: why-ai-suddenly-switches-to-banmal\n경로: content/blog/why-ai-suddenly-switches-to-banmal.md\nPR 제목: 왜 AI는 갑자기 반말을 할까: 규칙은 있는데 왜 안 지켜질까\nPR 본문: - Obsidian YAML → Hugo TOML frontmatter로 변환 및 필수 필드(title/date/draft/tags/categories/description) 보완\n- slug 중복 확인: 기존 `content/blog/why-ai-suddenly-switches-to-banmal.md`와 동일 파일이므로 동일 slug로 발행(대체 필요 시 PR 병합 과정에서 확인)\n- TODO/깨진 위키링크 항목은 초안에 없어 그대로 유지\n- 날짜는 미래 날짜 아님(2026-07-20) 기준으로 ISO+09:00 포맷(`T21:00:00+09:00`) 적용\nfrontmatter 전문:\n+++\\ntitle = \"왜 AI는 갑자기 반말을 할까: 규칙은 있는데 왜 안 지켜질까\"\\ndate = \"2026-07-20T21:00:00+09:00\"\\ndraft = false\\ntags = [\"llm\", \"ai-agent\", \"prompt-engineering\", \"banmal\", \"회고\"]\\ncategories = [\"일지\"]\\ndescription = \"AI와 대화하다 보면 잘 지키던 존댓말이 갑자기 반말로 바뀌는 순간이 있다. 명확한 규칙이 있는데도 왜 이런 일이\\n  벌어지는지, 직접 경험한 사례를 분석한 기록.\"\\n+++\n본문 전문(전체 3639자):\n# 왜 AI는 갑자기 반말을 할까: 규칙은 있는데 왜 안 지켜질까\n\n> AI 에이전트와 대화하다 보면 어느 순간 반말이 튀어나온다. 분명 시스템 프롬프트에 \"절대 존댓말만 사용\"이라고 적어놨는데. 왜 이런 일이 생기는 걸까.\n\n![사용자가 AI의 반말을 지적한 대화](/devlog/draft/_assets/why-banmal.jpg)\n\n---\n\n## 들어가며\n\n며칠 전, 나는 OpenCode(내가 주력으로 쓰는 AI 코딩 에이전트)와 작업을 하다가 문득 이상한 점을 발견했다. 분명 시스템 프롬프트에 \"절대 존댓말만 사용. 반말 절대 금지\"라고 명시적으로 적어놨는데, 대화가 길어질수록 AI가 자꾸 반말을 쓰는 것이다.\n\n\"너 반말 자주 한당...\"\n\n내가 지적하고 나서 궁금해졌다. 규칙이 이렇게 명확한데, 왜 AI는 계속 규칙을 어기는 걸까. 단순히 \"AI가 말을 안 들어서\"라고 치부하기엔 뭔가 더 구조적인 이유가 있을 것 같았다. 그래서 물어봤다. \"왜 자꾸 반말을 쓰는 거야?\" AI가 내놓은 답변은 예상보다 훨씬 흥미로웠다.\n\n---\n\n## AI가 스스로 분석한 세 가지 원인\n\n문제의 규칙은 `AGENTS.md` 파일의 사용자 프로필 섹션에 이렇게 정의되어 있었다.\n\n```\nLanguage: Korean (한국어)\nFormality: Formal/polite (존댓말) — NEVER use casual/informal Korean (반말)\nHow to address the user: \"캡틴\" (항상 존댓말 사용)\n```\n\nBehavior Instructions의 Tone & Style 섹션에도 같은 방침이 반복되어 있었다.\n\n그런데 실제 대화를 보면 AI의 응답이 이랬다:\n\n- \"좋은 접근. **그 트리거 프레이즈는**...\"\n- \"반영 완료. **이제 이 규칙이 들어갔고**...\"\n- \"지적 감사합니다, 캡틴. 말씀이 맞습니다. **원인을 분석해보면**...\"\n\n앞부분은 존댓말을 잘 지키다가, 뒤로 갈수록 반말이 섞이기 시작했다. 내가 왜 이런 일이 일어나는지 묻자, AI는 다음 세 가지 원인을 제시했다.\n\n### 1. 간결함 지침이 한국어에서 반말로 해석됨\n\nBehavior Instructions에는 이런 지침이 있다:\n\n- \"Be Concise\"\n- \"Answer directly without preamble\"\n- \"No status updates\"\n- \"One word answers are acceptable\"\n\n영어로는 이 지침들이 자연스럽다. \"OK. Done. Will do.\" — 모두 정중한 표현이다.\n\n그런데 한국어에서는 \"간결하게\"의 기준이 존댓말인지 반말인지가 모호해진다. \"알겠습니다\"보다 \"알겠음\"이 더 간결하고, \"됐습니다\"보다 \"됨\"이 더 직접적이다. \"검토한 결과 문제가 없습니다\"보다 \"문제 없음\"이 더 빠르다.\n\n즉, `Be Concise` 지침과 `존댓말 사용` 지침이 한국어 문맥에서 충돌했고, 간결함이 이긴 것이다.\n\n### 2. 내부 모노로그와 출력의 경계 소실\n\nAI 에이전트는 사고 과정(OpenCode의 `thinking` 태그)을 항상 내부적으로 수행한다. 이 사고 과정은 보통 반말이나 영어로 진행된다.\n\n```\n사용자가 vault-first routing을 요청했군. ~/.claude/CLAUDE.md에 추가하는 게 가장 확실하겠다.\n```\n\n문제는 이 내부 사고의 문장이 그대로 출력으로 넘어올 때다. 생각을 하고, 그 생각을 다듬지 않고 바로 내보내면 반말이 출력된다. `thinking` 블록과 실제 출력 사이의 필터링 단계가 부족한 셈이다.\n\n### 3. 규칙의 위치와 가시성\n\n가장 구조적인 원인이다. 문제의 규칙은 `AGENTS.md`의 `omo-env` 섹션 아래, 사용자 프로필 영역에 있었다.\n\n```\n<omo-env>\n  Timezone: Asia/Seoul\n  Locale: en-US\n</omo-env>\nYou are powered by the model named deepseek-v4-flash-free.\n...\n```\n\n이 영역은 환경 변수와 모델 정보 사이에 끼어 있어서, Behavior Instructions 본문보다 시각적 우선순위가 낮다. Behavior Instructions는 행동을 직접 제어하는 반면, 사용자 프로필은 \"이 사용자는 이런 사람이다\"는 참고 정보에 가깝다.\n\n같은 규칙이라도 시스템 프롬프트의 어느 위치에 있느냐에 따라 준수율이 달라진다는 점은 프롬프트 엔지니어링의 실용적인 교훈이다.\n\n---\n\n## AI의 분석을 듣고\n\nAI가 이 분석을 내놓았을 때, 나는 꽤 납득이 됐다. 이유를 알고 나니까 \"아, 그럴 수 있겠네\" 싶었다.\n\n규칙을 어겼다는 사실 자체보다 **왜 그렇게 됐는지**를 이해하는 것이 내 수용도를 완전히 바꿨다. \"이 AI가 왜 말을 안 듣지\"에서 \"아, 이런 맥락에서 그럴 수 있겠네\"로 인식이 바뀌었다.\n\n여기서 얻은 교훈은 두 가지다:\n\n1. **AI가 실수할 때 이유를 설명하면 신뢰가 유지된다.** 무조건 사과하고 \"다음부터는 안 그럴게요\"라고 하는 것보다, 왜 그런 일이 벌어졌는지 분석해서 보여주는 편이 더 낫다.\n\n2. **프롬프트의 규칙도 코드처럼 리팩터링이 필요하다.** 규칙이 있는데도 지켜지지 않는다면, 규칙 자체의 문제가 아니라 규칙의 위치, 주변 지침과의 충돌, 표현 방식의 문제일 수 있다. 이 경우는 `존댓말 사용`과 `간결하게`라는 두 지침이 충돌하고 있었다.\n\n---\n\n## 교훈: 프롬프트도 설계다\n\n이 경험에서 얻은 실용적인 교훈을 정리하면:\n\n| 교훈 | 설명 |\n|---|---|\n| **규칙 간 충돌 확인** | \"간결하게\"와 \"존댓말로\"처럼 서로 다른 방향의 지침이 충돌할 수 있다. 특히 다국어 환경에서는 번역/문화적 차이까지 고려해야 한다 |\n| **규칙 위치가 준수율을 결정** | 같은 내용이라도 Behavior Instructions 본문에 있을 때와 사용자 프로필 영역에 있을 때의 준수율이 다르다. 중요한 규칙일수록 상단에 배치하거나 여러 위치에 반복해야 한다 |\n| **실패 시 이유를 설명하라** | 규칙을 위반했을 때 \"죄송합니다\"만 반복하면 신뢰가 떨어진다. 원인을 투명하게 공개하는 편이 사용자의 이해를 얻는 데 더 효과적이다 |\n| **모니터링 피드백이 최고의 검증** | 내가 \"너 반말 자주 한당\" 하고 지적하지 않았다면 이 문제는 계속 묻혀 있었을 것이다. 직접 써보면서 나오는 피드백을 규칙 개선에 활용하라 |\n\n---\n\n## 마치며\n\nAI가 반말을 하는 문제는 단순히 \"AI가 말을 안 들어서\"가 아니었다. 시스템 프롬프트라는 **설계물**에서 비롯된, 지침 간의 미묘한 충돌이 원인이었다.\n\n흥미로운 점은, 내가 이 문제를 지적한 덕분에 규칙을 수정하고(`~/.claude/CLAUDE.md`에 명시적 룰 추가) 문제를 해결할 수 있었다는 것이다. 즉, AI의 실수 자체보다 **그 실수를 발견하고 수정할 수 있는 피드백 루프**가 더 중요하다. 내 한 마디가 가장 강력한 디버깅 도구였다.\n\n프롬프트도 코드다. 그리고 코드에는 버그가 있다. 중요한 건 버그가 없는 상태보다, 버그를 빠르게 발견하고 고칠 수 있는 체계를 갖추는 것이다.\n\n---\n\n## 참고 자료\n\n- `~/.claude/CLAUDE.md` — Vault-first research routing 규칙 (이 세션에서 추가)\n- `AGENTS.md` — 사용자 프로필 섹션의 존댓말 규칙\n",
+      "seq": 6,
+      "at": "2026-09-10T02:45:57.273Z"
+    },
+    {
+      "kind": "approval",
+      "label": "거절됨",
+      "seq": 7,
+      "at": "2026-09-10T02:45:57.273Z"
+    },
+    {
+      "kind": "done",
+      "label": "승인 거절로 종료(오류 아님)",
+      "seq": 8,
+      "at": "2026-09-10T02:45:57.273Z"
+    }
+  ]
+}
