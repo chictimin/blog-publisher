@@ -9,6 +9,36 @@
 - 입력: 마크다운 초안 전문, 대상 저장소(owner/repo), 방문자가 직접 입력한 OpenAI 호환 API 키·baseUrl과 GitHub PAT.
 - 결과물: 대상 저장소 `content/blog/<slug>.md`를 추가하는 PR 1건. `main`에 직접 push하지 않고 PR까지만 만든다.
 
+## 구조
+
+서버가 없다. 모델 호출·GitHub API 호출·에이전트 루프가 전부 브라우저에서 돈다. 평가는 같은 코어를 UI 없이 Node에서 돌리는 headless 실행이다.
+
+- src/core: 모델 호출·도구·루프. UI 의존 없음.
+- src/ui: 화면.
+- scripts: 평가 headless 실행.
+- .github/workflows: 배포.
+
+core와 ui를 분리한 이유: 같은 코어를 브라우저와 Node 양쪽에서 쓰기 위해서다. 평가 스크립트가 UI 없이 같은 루프를 돌리는 게 그 덕이다.
+
+```mermaid
+flowchart TB
+    A[방문자 입력]
+    B[브라우저 앱]
+    C[모델 OpenAI 호환]
+    D[도구 2개]
+    E[승인 게이트]
+    F[GitHub PR]
+    G[실행 trace]
+    A --> B
+    B --> C
+    C --> D
+    D --> C
+    C --> E
+    E --> F
+    C --> G
+    D --> G
+```
+
 ## 준비할 것
 
 (a) **OpenAI 호환 API 키 + baseUrl** — 키 하나가 아니라 키·baseUrl 조합이다. CORS 실측(2026-09-10)으로 확인된 예시 2개: `https://api.openai.com/v1` (본가, 권장), `https://opencode.ai/zen/go/v1` (호환 게이트웨이). 권장은 본가다. 호환 게이트웨이는 공유 쿼터 소진으로 실행 중 끊길 수 있다. 값을 미리 채우지 않으며, 방문자가 제3의 제공자를 넣을 수도 있다. 모델 목록 조회와 실행에 사용한다.
@@ -69,4 +99,29 @@ GitHub Actions로 빌드해 GitHub Pages에 배포한다. 워크플로는 `.gith
 
 ## 평가
 
-PRD 9절 계획(draft 3개 × 모델 2종 = 6회 실행, 완료율·변환 정확도·소요시간·토큰 측정)에 따라 실행하고 결과 표는 추후 채운다.
+2026-09-10 실행. draft 3개 × 모델 2종(gpt-5.4-nano, gpt-5.4-mini) = 6회. 승인은 기본 거절이라 실제 PR 미생성.
+
+- 결과: 6/6 승인 게이트 도달, 오류 0건. nano 평균 약 19.0초, mini 약 9.3초.
+- 관찰 1: 병목은 두 번째 모델 호출(변환 결과 생성)로 전체의 84~94%다. 도구 실행은 2~3%라 GitHub API 왕복이 병목이 아니다.
+- 관찰 2: 출력 토큰이 거의 같은데 nano가 mini보다 1.8~2.2배 느렸다(약 147 tok/s 대 317 tok/s). 작은 모델이 빠르다는 직관이 이 워크로드에서 성립하지 않았다.
+- 한계: 승인을 거절했으므로 변환 정확도를 정답 포스트와 대조하지 못했다. 표의 완료는 승인 게이트 도달을 뜻한다. 6회 모두 성공해 실패 사례 표본이 없다. 조건별 1회 측정이라 분산을 모른다.
+- 원본: experiments/20260910-114513/에 RESULTS.md와 trace-1..6.json이 있다. 재현 명령: npm run eval.
+
+## 과제 평가 문항 대응
+
+채점용 찾아보기다. 충족 여부 판단이 아니라 위치 안내다.
+
+| 평가 문항 | 볼 것 |
+|---|---|
+| 1. PRD | PRD.md 1~5절 |
+| 2. 도구 연결 | 도구 스키마·실패 처리는 PRD.md 4절과 src/core/tools.ts, 권한은 CONTRACT.md |
+| 3. 에이전트 루프 | src/core/loop.ts, 종료 조건은 PRD.md 7절 |
+| 4. 사람 개입·관찰가능성·평가 | 승인 게이트는 src/core/loop.ts와 src/ui/ApprovalCard.tsx, trace는 src/ui/TraceView.tsx, 평가 실측은 experiments/20260910-114513/RESULTS.md |
+| 5. 배포 | 위 배포 URL과 .github/workflows/, 동작 범위는 아래 동작 확인 상태 |
+
+## 동작 확인 상태
+
+실측과 미검증을 구분한다.
+
+- 실측 확인됨(2026-09-10): typecheck·build 통과, Pages 배포와 사이트 200 응답, 프로덕션 dist에 VITE_DEV_ 문자열 0건, OpenAI 호환 /v1/models 조회 성공, 평가 6회 완주, api.openai.com과 opencode.ai/zen/go/v1의 CORS 프리플라이트 허용, 브라우저에서 사용자 키로 승인 게이트 도달까지 동작(사용자 보고, 직접 관측 아님).
+- 미검증: 승인 후 create_publish_pr이 실제로 PR을 생성하는 경로(승인 거절로 미호출), 승인 카드가 화면에 렌더됐는지(거절 종료 메시지는 확인됐으나 카드를 보고 거절했는지 구분 불가), 방문자가 제3의 baseUrl을 넣은 경우의 CORS.
