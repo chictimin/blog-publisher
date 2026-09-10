@@ -135,21 +135,28 @@ export async function executeTool(
 }
 
 /** 승인 카드용 평문 요약. 마크다운이 아니다. */
+const BODY_PREVIEW_LIMIT = 4000;
+
 export function buildApprovalRequest(id: string, input: unknown): ApprovalRequest {
   const args = asRecord(input);
   const slug = String(args['slug'] ?? '');
   const frontmatter = String(args['frontmatter'] ?? '');
   const body = String(args['body'] ?? '');
   const prTitle = String(args['prTitle'] ?? '');
-  const head = body.slice(0, 200).replace(/\n/g, ' ');
-  const fmLines = frontmatter.split('\n').slice(0, 10).join('\n');
+  const prBody = String(args['prBody'] ?? '');
+  const bodyShown =
+    body.length > BODY_PREVIEW_LIMIT
+      ? `${body.slice(0, BODY_PREVIEW_LIMIT)}\n...(이하 잘림, 전체 ${body.length}자)`
+      : body;
   const lines = [
-    'PR을 생성합니다. 승인하면 아래 변경이 대상 저장소에 PR로 올라갑니다.',
+    '승인하면 대상 저장소에 새 브랜치가 만들어지고 PR이 생성됩니다. main에 머지되지는 않으므로 블로그에 바로 게시되지 않습니다.',
+    '거절하면 어떤 요청도 저장소에 가지 않으며 그대로 종료됩니다.',
     `slug: ${slug}`,
     `경로: content/blog/${slug}.md`,
     `PR 제목: ${prTitle}`,
-    `frontmatter:\n${fmLines}`,
-    `본문: ${body.length}자, 앞부분: ${head}`,
+    `PR 본문: ${prBody}`,
+    `frontmatter 전문:\n${frontmatter}`,
+    `본문 전문(전체 ${body.length}자):\n${bodyShown}`,
   ];
   return { id, title: 'PR을 생성합니다', diffPreview: lines.join('\n') };
 }

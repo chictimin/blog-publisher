@@ -14,6 +14,7 @@ import TraceView from './ui/TraceView';
 import ApprovalCard from './ui/ApprovalCard';
 import ResultView from './ui/ResultView';
 import { guidanceFor } from './ui/errorMessages';
+import { parseRepo } from './ui/parseRepo';
 
 interface ModelOption {
   id: string;
@@ -32,8 +33,7 @@ function PublisherPage() {
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [githubToken, setGithubToken] = useState('');
-  const [owner, setOwner] = useState('');
-  const [repo, setRepo] = useState('');
+  const [repoInput, setRepoInput] = useState('');
 
   const [models, setModels] = useState<ModelOption[]>([]);
   const [model, setModel] = useState(''); // 기본값 없음
@@ -49,6 +49,13 @@ function PublisherPage() {
   const approvalResolve = useRef<((approved: boolean) => void) | null>(null);
 
   const busy = status === 'running' || status === 'waiting_approval';
+
+  // 저장소 입력은 owner/repo 또는 URL 모두 받아 정규화한다. 파싱 실패면 실행 불가.
+  const parsedRepo = parseRepo(repoInput);
+  const repoError =
+    repoInput.trim() !== '' && parsedRepo === null
+      ? 'owner/repo 형태 또는 저장소 URL을 넣어 주세요.'
+      : null;
 
   const handleLoadModels = useCallback(async () => {
     if (apiKey.trim() === '' || baseUrl.trim() === '') {
@@ -87,13 +94,12 @@ function PublisherPage() {
     apiKey.trim() !== '' &&
     baseUrl.trim() !== '' &&
     githubToken.trim() !== '' &&
-    owner.trim() !== '' &&
-    repo.trim() !== '' &&
+    parsedRepo !== null &&
     model !== '' &&
     draft.trim() !== '';
 
   const handleRun = useCallback(async () => {
-    if (!canRun) return;
+    if (!canRun || parsedRepo === null) return;
     setTraces([]);
     setResult(null);
     setPendingApproval(null);
@@ -104,8 +110,8 @@ function PublisherPage() {
           baseUrl: baseUrl.trim(),
           githubToken,
           model,
-          owner: owner.trim(),
-          repo: repo.trim(),
+          owner: parsedRepo.owner,
+          repo: parsedRepo.repo,
           maxIters: MAX_ITERS,
         },
         draft,
@@ -127,7 +133,7 @@ function PublisherPage() {
       approvalResolve.current = null;
       setPendingApproval(null);
     }
-  }, [canRun, apiKey, baseUrl, githubToken, model, owner, repo, draft, handleApproval]);
+  }, [canRun, parsedRepo, apiKey, baseUrl, githubToken, model, draft, handleApproval]);
 
   return (
     <main>
@@ -135,19 +141,24 @@ function PublisherPage() {
       <p className="muted">
         상태: {status}
       </p>
+      {status === 'waiting_approval' && (
+        <p className="waiting-banner" role="alert">
+          승인 대기 중입니다 — 아래 승인 카드에서 변경 내용을 확인하고
+          승인 또는 거절해 주세요.
+        </p>
+      )}
 
       <SettingsForm
         apiKey={apiKey}
         baseUrl={baseUrl}
         githubToken={githubToken}
-        owner={owner}
-        repo={repo}
+        repoInput={repoInput}
+        repoError={repoError}
         disabled={busy}
         onApiKey={setApiKey}
         onBaseUrl={setBaseUrl}
         onGithubToken={setGithubToken}
-        onOwner={setOwner}
-        onRepo={setRepo}
+        onRepoInput={setRepoInput}
       />
 
       <ModelSelect
@@ -172,8 +183,6 @@ function PublisherPage() {
         )}
       </section>
 
-      <TraceView traces={traces} />
-
       {status === 'waiting_approval' && pendingApproval !== null && (
         <ApprovalCard
           request={pendingApproval.request}
@@ -181,6 +190,8 @@ function PublisherPage() {
           onReject={() => settleApproval(false)}
         />
       )}
+
+      <TraceView traces={traces} />
 
       <ResultView result={result} />
     </main>

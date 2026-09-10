@@ -12,7 +12,8 @@
 export type GithubErrorCode =
   | 'GITHUB_AUTH_FAILED'
   | 'GITHUB_NOT_FOUND'
-  | 'GITHUB_REQUEST_FAILED';
+  | 'GITHUB_REQUEST_FAILED'
+  | 'BAD_REPO_REF';
 
 export class GithubError extends Error {
   readonly code: GithubErrorCode;
@@ -50,8 +51,50 @@ interface PullInfo {
   html_url?: string;
 }
 
+/**
+ * owner·repo 검증. API를 호출하기 전에 막는다.
+ * 값이 통째로 URL인 경우(슬래시·프로토콜 포함) fetch까지 가면
+ * 엉뚱한 URL이 되어 Failed to fetch가 나므로 여기서 차단한다.
+ * 오류 메시지에는 무엇이 잘못됐는지만 넣고 값 전체는 노출하지 않는다.
+ */
+function validateSegment(kind: 'owner' | 'repo', value: string): void {
+  if (value === '') {
+    throw new GithubError(
+      'BAD_REPO_REF',
+      `${kind}가 비어 있습니다. 저장소 URL 전체가 아니라 소유자와 저장소 이름을 각각 입력하세요.`,
+    );
+  }
+  if (value.includes('://')) {
+    throw new GithubError(
+      'BAD_REPO_REF',
+      `${kind}에 URL 형식이 들어 있습니다. 저장소 주소 전체가 아니라 이름만 입력하세요.`,
+    );
+  }
+  if (value.includes('/')) {
+    throw new GithubError(
+      'BAD_REPO_REF',
+      `${kind}에 슬래시가 들어 있습니다. 저장소 주소가 아니라 이름만 입력하세요.`,
+    );
+  }
+  if (value.includes(':')) {
+    throw new GithubError(
+      'BAD_REPO_REF',
+      `${kind}에 콜론이 들어 있습니다. 저장소 주소가 아니라 이름만 입력하세요.`,
+    );
+  }
+  if (/\s/.test(value)) {
+    throw new GithubError(
+      'BAD_REPO_REF',
+      `${kind}에 공백이 들어 있습니다. 앞뒤 공백을 제거하고 이름만 입력하세요.`,
+    );
+  }
+}
+
 function repoPath(ctx: GithubContext, path: string): string {
-  return `/repos/${ctx.owner}/${ctx.repo}${path}`;
+  validateSegment('owner', ctx.owner);
+  validateSegment('repo', ctx.repo);
+  // path는 슬래시를 포함하므로 제외하고 owner·repo 세그먼트만 인코딩한다.
+  return `/repos/${encodeURIComponent(ctx.owner)}/${encodeURIComponent(ctx.repo)}${path}`;
 }
 
 async function readBodyText(res: Response): Promise<string> {
@@ -85,9 +128,11 @@ async function singleRequest(
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (err) {
+    // Failed to fetch는 CORS 차단과 네트워크 오류를 구분할 수 없다.
+    // 잘못된 경로가 원인일 수도 있으므로 힌트를 남긴다.
     throw new GithubError(
       'GITHUB_REQUEST_FAILED',
-      `네트워크 오류로 GitHub 호출 실패: ${method} ${path} (${err instanceof Error ? err.message : 'unknown'})`,
+      `네트워크 오류로 GitHub 호출 실패: ${method} ${path} (${err instanceof Error ? err.message : 'unknown'}). owner/repo·경로 오타 또는 네트워크 문제일 수 있습니다.`,
     );
   }
   if (res.status === 401 || res.status === 403) {

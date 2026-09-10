@@ -2,19 +2,18 @@ interface SettingsFormProps {
   apiKey: string;
   baseUrl: string;
   githubToken: string;
-  owner: string;
-  repo: string;
+  repoInput: string;
+  repoError: string | null;
   disabled: boolean;
   onApiKey: (v: string) => void;
   onBaseUrl: (v: string) => void;
   onGithubToken: (v: string) => void;
-  onOwner: (v: string) => void;
-  onRepo: (v: string) => void;
+  onRepoInput: (v: string) => void;
 }
 
 /** 1단계: 설정. 키는 React state 메모리에만 보관한다. */
 export default function SettingsForm(props: SettingsFormProps) {
-  const { apiKey, baseUrl, githubToken, owner, repo, disabled } = props;
+  const { apiKey, baseUrl, githubToken, repoInput, repoError, disabled } = props;
   return (
     <section aria-label="1단계 설정">
       <h2>1. 설정</h2>
@@ -59,28 +58,18 @@ export default function SettingsForm(props: SettingsFormProps) {
       </p>
       <div className="row">
         <label>
-          대상 저장소 owner
+          대상 저장소 (owner/repo 또는 저장소 URL)
           <input
             type="text"
             autoComplete="off"
-            value={owner}
+            value={repoInput}
             disabled={disabled}
-            onChange={(e) => props.onOwner(e.target.value)}
-            placeholder="owner"
-          />
-        </label>
-        <label>
-          대상 저장소 repo
-          <input
-            type="text"
-            autoComplete="off"
-            value={repo}
-            disabled={disabled}
-            onChange={(e) => props.onRepo(e.target.value)}
-            placeholder="repo"
+            onChange={(e) => props.onRepoInput(e.target.value)}
+            placeholder="chictimin/chictimin.github.io"
           />
         </label>
       </div>
+      {repoError !== null && <p className="error">{repoError}</p>}
     </section>
   );
 }

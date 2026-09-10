@@ -126,6 +126,7 @@ export function runAgent(args: {
 | `SLUG_CONFLICT` | 같은 slug가 이미 있음 | slug 변경 요청 |
 | `LIMIT_EXCEEDED` | maxIters 초과 | 종료 사실만 표시 |
 | `BAD_DRAFT` | 초안이 비었거나 파싱 불가 | 입력 확인 요청 |
+| `BAD_REPO_REF` | owner/repo 형식이 잘못됨(URL 붙여넣기, 슬래시·프로토콜 포함 등). **API를 호출하기 전에 막는다** | owner/repo 형태 또는 저장소 URL을 넣도록 안내 |
 
 ## 화면 (A 담당) — 한 페이지, HashRouter
 

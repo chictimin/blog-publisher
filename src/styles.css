@@ -158,6 +158,21 @@ pre {
 }
 
 .diff-preview {
-  max-height: 320px;
+  max-height: 400px;
   overflow-y: auto;
+}
+
+button.primary {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+}
+
+.waiting-banner {
+  background: #ffedd5;
+  border: 2px solid #b45309;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
 }
